@@ -1,0 +1,53 @@
+on:
+  push:
+    branches:
+      - master
+
+env:
+  AZURE_WEBAPP_NAME: Systemutviklerskolen-todo-preview    # set this to your application's name
+  AZURE_WEBAPP_PACKAGE_PATH: '.'      # set this to the path to your web app project, defaults to the repository root
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+     - uses: actions/checkout@v2
+     
+     - name: Use Node.js 14.x
+       uses: actions/setup-node@v1
+       with:
+         node-version: 14.x
+     - name: Restore frontend
+       run: npm install 
+       working-directory: systemutviklerskolen-todo-app-frontend/
+     - name: Build frontend
+       run: npm run build
+       working-directory: systemutviklerskolen-todo-app-frontend/
+     - uses: actions/checkout@v2
+     
+     - name: Setup .NET
+       uses: actions/setup-dotnet@v1
+       with:
+         dotnet-version: 6.0.x
+     - name: Restore dependencies
+       run: dotnet restore
+       working-directory: systemutviklerskolen-todo-app-backend
+     - name: Build
+       run: dotnet build --no-restore
+       working-directory: systemutviklerskolen-todo-app-backend
+     - name: publish backend
+       working-directory: systemutviklerskolen-todo-app-backend
+       run: dotnet publish -c Release -o '../app'
+       
+     - name: Copy frontend build folder to release artifact
+       run: cp -r systemutviklerskolen-todo-app-frontend/build app/todo-app-frontend
+        
+     - name: 'Deploy to Azure WebApp'
+       uses: azure/webapps-deploy@v2
+       with:
+         dotnet-version: '6.0.x'
+         app-name: ${{ env.AZURE_WEBAPP_NAME }}
+         publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_PREVIEW }}
+         package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
