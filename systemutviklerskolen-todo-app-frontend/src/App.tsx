@@ -3,19 +3,8 @@ import { TodoList } from './TodoList';
 import { AddTodoForm } from './AddTodoForm';
 import './App.css';
 
-const initialTodos: Todo[] = [
-  {
-    text: 'Lage presentasjon',
-    complete: true,
-  },
-  {
-    text: 'Fikse app',
-    complete: false,
-  },
-];
-
 function App() {
-  const [todos, setTodos] = useState(initialTodos);
+  const [todos, setTodos] = useState<Todo[]>([]);
 
   const toggleTodo: ToggleTodo = (selectedTodo: Todo) => {
     const newTodos = todos.map((todo) => {
@@ -31,8 +20,15 @@ function App() {
   };
 
   const addTodo: AddTodo = (text: string) => {
-    const newTodo = { text, complete: false };
-    setTodos([...todos, newTodo]);
+    const newTodo = { text, id: undefined, complete: false };
+    fetch(window.location.origin + '/api/todo', {
+      method: 'post',
+      body: JSON.stringify(newTodo)
+    })
+      .then(response => response.json())
+      .then(response => {
+        setTodos(response);
+      });
   };
 
   return (
